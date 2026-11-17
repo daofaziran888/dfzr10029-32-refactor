@@ -65,6 +65,20 @@ def export_entries(
         headers={"Content-Disposition": 'attachment; filename="audit.csv"'})
 
 
+@router.get("/export-ledger-records")
+def export_ledger_records(
+    entry_id: int | None = Query(default=None, description="缺省跨业务模块读取全量分片账本审计记录"),
+) -> dict[str, object]:
+    """跨业务模块读取数据导出的分片账本审计记录（只读，沿用既有次序）。"""
+    from app.services.export import ExportService
+
+    # 进程内直接调用时 FastAPI 的 Query 占位会原样传入，归一化为缺省全量读取。
+    if not isinstance(entry_id, int):
+        entry_id = None
+    records = ExportService().audit_records(entry_id)
+    return {"items": records, "total": len(records)}
+
+
 @router.get("/{entry_id}", response_model=dict)
 def get_entry(entry_id: int) -> dict:
     """读取单条审计记录明细；不存在时给出可读的错误说明。"""
